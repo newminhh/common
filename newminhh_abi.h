@@ -63,6 +63,7 @@
 
 #ifndef __ASSEMBLER__
 
+#include "newminhh_cstd.h"
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -75,7 +76,9 @@
 extern "C" {
 #endif
 
-typedef enum {
+NM_ASSUME_NONNULL_BEGIN
+
+typedef enum : int32_t {
     NM_OK          =  0,
     NM_ERR_ELF     = -1,
     NM_ERR_INSN    = -2,
@@ -84,7 +87,7 @@ typedef enum {
     NM_ERR_ABI     = -5
 } nm_err_t;
 
-typedef enum {
+typedef enum : uint32_t {
     NM_REG_EAX = 0,
     NM_REG_ECX = 1,
     NM_REG_EDX = 2,
@@ -95,8 +98,8 @@ typedef enum {
     NM_REG_EDI = 7
 } nm_reg_idx_t;
 
-typedef struct __attribute__((aligned(16))) {
-    uint32_t gpr[8];            /* EAX, ECX, EDX, EBX, ESP, EBP, ESI, EDI */
+typedef struct NM_ALIGNED(16) {
+    alignas(16) uint32_t gpr[8];            /* EAX, ECX, EDX, EBX, ESP, EBP, ESI, EDI */
     uint32_t eip;
     uint32_t eflags;
     uint32_t gs_base;
@@ -105,18 +108,19 @@ typedef struct __attribute__((aligned(16))) {
     uint32_t exit_reason;
     uint32_t exit_arg;
     uint32_t _pad[3];
-    uint8_t  fxsave_area[512] __attribute__((aligned(16)));
+    alignas(16) uint8_t  fxsave_area[512];
 } newminhh_cpu_t;
 
-_Static_assert(sizeof(newminhh_cpu_t) == NM_CPU_SIZE, "newminhh_cpu_t size mismatch");
-_Static_assert(offsetof(newminhh_cpu_t, eip) == NM_CPU_OFF_EIP, "cpu.eip offset mismatch");
-_Static_assert(offsetof(newminhh_cpu_t, eflags) == NM_CPU_OFF_EFLAGS, "cpu.eflags offset mismatch");
-_Static_assert(offsetof(newminhh_cpu_t, gs_base) == NM_CPU_OFF_GS_BASE, "cpu.gs_base offset mismatch");
-_Static_assert(offsetof(newminhh_cpu_t, fs_base) == NM_CPU_OFF_FS_BASE, "cpu.fs_base offset mismatch");
-_Static_assert(offsetof(newminhh_cpu_t, tls_bases) == NM_CPU_OFF_TLS_BASES, "cpu.tls_bases offset mismatch");
-_Static_assert(offsetof(newminhh_cpu_t, exit_reason) == NM_CPU_OFF_EXIT_REASON, "cpu.exit_reason offset mismatch");
-_Static_assert(offsetof(newminhh_cpu_t, exit_arg) == NM_CPU_OFF_EXIT_ARG, "cpu.exit_arg offset mismatch");
-_Static_assert(offsetof(newminhh_cpu_t, fxsave_area) == NM_CPU_OFF_FXSAVE, "cpu.fxsave_area offset mismatch");
+static_assert(sizeof(newminhh_cpu_t) == NM_CPU_SIZE, "newminhh_cpu_t size mismatch");
+static_assert(alignof(newminhh_cpu_t) == 16, "newminhh_cpu_t align mismatch");
+static_assert(offsetof(newminhh_cpu_t, eip) == NM_CPU_OFF_EIP, "cpu.eip offset mismatch");
+static_assert(offsetof(newminhh_cpu_t, eflags) == NM_CPU_OFF_EFLAGS, "cpu.eflags offset mismatch");
+static_assert(offsetof(newminhh_cpu_t, gs_base) == NM_CPU_OFF_GS_BASE, "cpu.gs_base offset mismatch");
+static_assert(offsetof(newminhh_cpu_t, fs_base) == NM_CPU_OFF_FS_BASE, "cpu.fs_base offset mismatch");
+static_assert(offsetof(newminhh_cpu_t, tls_bases) == NM_CPU_OFF_TLS_BASES, "cpu.tls_bases offset mismatch");
+static_assert(offsetof(newminhh_cpu_t, exit_reason) == NM_CPU_OFF_EXIT_REASON, "cpu.exit_reason offset mismatch");
+static_assert(offsetof(newminhh_cpu_t, exit_arg) == NM_CPU_OFF_EXIT_ARG, "cpu.exit_arg offset mismatch");
+static_assert(offsetof(newminhh_cpu_t, fxsave_area) == NM_CPU_OFF_FXSAVE, "cpu.fxsave_area offset mismatch");
 
 /* --- i386 ABI struct layouts --- */
 
@@ -125,33 +129,33 @@ typedef struct {
     int32_t tv_nsec;
 } newminhh_timespec32_t;
 
-_Static_assert(sizeof(newminhh_timespec32_t) == 8, "newminhh_timespec32_t must be 8 bytes");
-_Static_assert(_Alignof(newminhh_timespec32_t) == 4, "newminhh_timespec32_t align must be 4");
+static_assert(sizeof(newminhh_timespec32_t) == 8, "newminhh_timespec32_t must be 8 bytes");
+static_assert(alignof(newminhh_timespec32_t) == 4, "newminhh_timespec32_t align must be 4");
 
-typedef struct __attribute__((packed, aligned(4))) {
+typedef struct NM_PACKED NM_ALIGNED(4) {
     int64_t tv_sec;
     int32_t tv_nsec;
     int32_t _pad;
 } newminhh_timespec64_t32_t;
 
-_Static_assert(sizeof(newminhh_timespec64_t32_t) == 16, "newminhh_timespec64_t32_t must be 16 bytes");
-_Static_assert(_Alignof(newminhh_timespec64_t32_t) == 4, "newminhh_timespec64_t32_t align must be 4");
+static_assert(sizeof(newminhh_timespec64_t32_t) == 16, "newminhh_timespec64_t32_t must be 16 bytes");
+static_assert(alignof(newminhh_timespec64_t32_t) == 4, "newminhh_timespec64_t32_t align must be 4");
 
 typedef struct {
     uint32_t rlim_cur;
     uint32_t rlim_max;
 } newminhh_rlimit32_t;
 
-_Static_assert(sizeof(newminhh_rlimit32_t) == 8, "newminhh_rlimit32_t must be 8 bytes");
-_Static_assert(_Alignof(newminhh_rlimit32_t) == 4, "newminhh_rlimit32_t align must be 4");
+static_assert(sizeof(newminhh_rlimit32_t) == 8, "newminhh_rlimit32_t must be 8 bytes");
+static_assert(alignof(newminhh_rlimit32_t) == 4, "newminhh_rlimit32_t align must be 4");
 
-typedef struct __attribute__((packed, aligned(4))) {
+typedef struct NM_PACKED NM_ALIGNED(4) {
     uint64_t rlim_cur;
     uint64_t rlim_max;
 } newminhh_rlimit64_t32_t;
 
-_Static_assert(sizeof(newminhh_rlimit64_t32_t) == 16, "newminhh_rlimit64_t32_t must be 16 bytes");
-_Static_assert(_Alignof(newminhh_rlimit64_t32_t) == 4, "newminhh_rlimit64_t32_t align must be 4");
+static_assert(sizeof(newminhh_rlimit64_t32_t) == 16, "newminhh_rlimit64_t32_t must be 16 bytes");
+static_assert(alignof(newminhh_rlimit64_t32_t) == 4, "newminhh_rlimit64_t32_t align must be 4");
 
 /* Kernel i386 old_stat (syscalls 106/107/108) — 64 bytes */
 typedef struct {
@@ -175,7 +179,7 @@ typedef struct {
     uint32_t __unused5;
 } newminhh_kstat32_t;
 
-_Static_assert(sizeof(newminhh_kstat32_t) == 64, "newminhh_kstat32_t must be 64 bytes");
+static_assert(sizeof(newminhh_kstat32_t) == 64, "newminhh_kstat32_t must be 64 bytes");
 
 /* glibc i386 default struct stat (32-bit off_t/ino_t/time_t) — 88 bytes */
 typedef struct {
@@ -199,11 +203,11 @@ typedef struct {
     uint32_t __glibc_reserved[2];
 } newminhh_stat32_t;
 
-_Static_assert(sizeof(newminhh_stat32_t) == 88, "newminhh_stat32_t must be 88 bytes");
-_Static_assert(_Alignof(newminhh_stat32_t) <= 8, "newminhh_stat32_t");
+static_assert(sizeof(newminhh_stat32_t) == 88, "newminhh_stat32_t must be 88 bytes");
+static_assert(alignof(newminhh_stat32_t) <= 8, "newminhh_stat32_t align");
 
 /* glibc i386 struct stat64 / kernel stat64 (_FILE_OFFSET_BITS=64, 32-bit time) — 96 bytes */
-typedef struct __attribute__((packed, aligned(4))) {
+typedef struct NM_PACKED NM_ALIGNED(4) {
     uint64_t st_dev;
     uint8_t  __pad1[4];
     uint32_t __st_ino;
@@ -222,11 +226,11 @@ typedef struct __attribute__((packed, aligned(4))) {
     uint64_t st_ino;
 } newminhh_stat64_t;
 
-_Static_assert(sizeof(newminhh_stat64_t) == 96, "newminhh_stat64_t must be 96 bytes");
-_Static_assert(_Alignof(newminhh_stat64_t) == 4, "newminhh_stat64_t align must be 4");
+static_assert(sizeof(newminhh_stat64_t) == 96, "newminhh_stat64_t must be 96 bytes");
+static_assert(alignof(newminhh_stat64_t) == 4, "newminhh_stat64_t align must be 4");
 
 /* glibc i386 _FILE_OFFSET_BITS=64 + _TIME_BITS=64 struct stat — 108 bytes */
-typedef struct __attribute__((packed, aligned(4))) {
+typedef struct NM_PACKED NM_ALIGNED(4) {
     uint64_t st_dev;
     uint64_t st_ino;
     uint32_t st_mode;
@@ -242,8 +246,8 @@ typedef struct __attribute__((packed, aligned(4))) {
     newminhh_timespec64_t32_t st_ctim;
 } newminhh_stat64_t64_t;
 
-_Static_assert(sizeof(newminhh_stat64_t64_t) == 108, "newminhh_stat64_t64_t must be 108 bytes");
-_Static_assert(_Alignof(newminhh_stat64_t64_t) == 4, "newminhh_stat64_t64_t align must be 4");
+static_assert(sizeof(newminhh_stat64_t64_t) == 108, "newminhh_stat64_t64_t must be 108 bytes");
+static_assert(alignof(newminhh_stat64_t64_t) == 4, "newminhh_stat64_t64_t align must be 4");
 
 /* i386 set_thread_area user_desc — 16 bytes */
 typedef struct {
@@ -253,7 +257,7 @@ typedef struct {
     uint32_t flags;
 } newminhh_user_desc32_t;
 
-_Static_assert(sizeof(newminhh_user_desc32_t) == 16, "newminhh_user_desc32_t must be 16 bytes");
+static_assert(sizeof(newminhh_user_desc32_t) == 16, "newminhh_user_desc32_t must be 16 bytes");
 
 /* i386 old_mmap (syscall 90) arg struct — 24 bytes */
 typedef struct {
@@ -265,7 +269,7 @@ typedef struct {
     uint32_t offset;
 } newminhh_mmap_arg_struct32_t;
 
-_Static_assert(sizeof(newminhh_mmap_arg_struct32_t) == 24, "newminhh_mmap_arg_struct32_t must be 24 bytes");
+static_assert(sizeof(newminhh_mmap_arg_struct32_t) == 24, "newminhh_mmap_arg_struct32_t must be 24 bytes");
 
 /* --- Signature descriptors & symbol registry --- */
 
@@ -278,8 +282,8 @@ typedef struct {
 } nm_fn_sig_t;
 
 typedef struct {
-    const char *name;
-    void       *wrapper_fn;
+    const char *NM_NONNULL_PTR name;
+    void       *NM_NULLABLE_PTR wrapper_fn;
     nm_fn_sig_t sig;
     uint32_t    flags;
 } nm_sym_entry_t;
@@ -287,11 +291,11 @@ typedef struct {
 /* --- Part 3 / Part 4 Integration Callback Interfaces --- */
 
 typedef struct {
-    void *(*dlopen_fn)(const char *path, int flags);
-    void *(*dlsym_fn)(void *handle, const char *symbol);
-    int   (*dlclose_fn)(void *handle);
-    const char *(*dlerror_fn)(void);
-    int   (*is_guest_elf_fn)(const char *path);
+    void *NM_NULLABLE_PTR (* NM_NULLABLE_PTR dlopen_fn)(const char *path, int flags);
+    void *NM_NULLABLE_PTR (* NM_NULLABLE_PTR dlsym_fn)(void *handle, const char *symbol);
+    int   (* NM_NULLABLE_PTR dlclose_fn)(void *handle);
+    const char *NM_NULLABLE_PTR (* NM_NULLABLE_PTR dlerror_fn)(void);
+    int   (* NM_NULLABLE_PTR is_guest_elf_fn)(const char *path);
 } nm_dl_backend_t;
 
 typedef int (*nm_guest_invoker_t)(uint32_t guest_fn_va,
@@ -303,33 +307,33 @@ typedef int (*nm_guest_invoker_t)(uint32_t guest_fn_va,
 
 typedef uint32_t (*nm_brk_hook_t)(uint32_t requested_brk);
 
-void newminhh_register_dl_backend(const nm_dl_backend_t *backend);
-void newminhh_register_guest_invoker(nm_guest_invoker_t invoker);
-nm_guest_invoker_t newminhh_get_guest_invoker(void);
-void newminhh_register_brk_hook(nm_brk_hook_t brk_hook);
+void newminhh_register_dl_backend(const nm_dl_backend_t *NM_NULLABLE_PTR backend);
+void newminhh_register_guest_invoker(nm_guest_invoker_t NM_NULLABLE_PTR invoker);
+[[nodiscard]] nm_guest_invoker_t NM_NULLABLE_PTR newminhh_get_guest_invoker(void);
+void newminhh_register_brk_hook(nm_brk_hook_t NM_NULLABLE_PTR brk_hook);
 void newminhh_register_native_cdecl_range(uint32_t start_va, uint32_t end_va);
 void newminhh_unregister_native_cdecl_range(uint32_t start_va, uint32_t end_va);
-int  newminhh_is_native_cdecl_va(uint32_t va);
-int  newminhh_mode_for_va(uint32_t guest_fn_va);
+[[nodiscard]] int  newminhh_is_native_cdecl_va(uint32_t va);
+[[nodiscard]] int  newminhh_mode_for_va(uint32_t guest_fn_va);
 
 /* --- Calling convention bridges (compat_asm.S) --- */
 
 uint64_t newminhh_call_x32_sig(void *target_x32_fn,
                                const nm_fn_sig_t *sig,
                                const uint32_t *i386_cdecl_args,
-                               uint64_t *out_fp_bits);
+                               uint64_t *NM_NULLABLE_PTR out_fp_bits);
 
 uint64_t newminhh_call_x32_cdecl(void *target_x32_fn,
                                  const nm_fn_sig_t *sig,
-                                 const uint32_t *i386_cdecl_args);
+                                 const uint32_t *NM_NULLABLE_PTR i386_cdecl_args);
 
 uint64_t newminhh_in_bridge(uint32_t guest_fn_va,
-                            const nm_fn_sig_t *sig,
-                            const uint64_t *x32_gprs,
-                            const uint64_t *x32_xmms,
-                            const uint64_t *x32_stack,
+                            const nm_fn_sig_t *NM_NULLABLE_PTR sig,
+                            const uint64_t *NM_NULLABLE_PTR x32_gprs,
+                            const uint64_t *NM_NULLABLE_PTR x32_xmms,
+                            const uint64_t *NM_NULLABLE_PTR x32_stack,
                             int mode,
-                            double *out_fp_ret);
+                            double *NM_NULLABLE_PTR out_fp_ret);
 
 /* --- Syscall translation (compat_syscall.c) --- */
 
@@ -337,48 +341,48 @@ int32_t newminhh_compat_syscall(uint32_t nr, uint32_t a1, uint32_t a2,
                                 uint32_t a3, uint32_t a4, uint32_t a5,
                                 uint32_t a6);
 int32_t newminhh_compat_syscall_cpu(newminhh_cpu_t *cpu);
-uint32_t newminhh_compat_get_tls_base(uint32_t selector_or_idx);
+[[nodiscard]] uint32_t newminhh_compat_get_tls_base(uint32_t selector_or_idx);
 void newminhh_compat_set_gs_sel(uint32_t selector);
 
 /* --- Struct repacking (compat_structs.c) --- */
 
-int newminhh_repack_stat_to_stat32(const struct stat *src, newminhh_stat32_t *dst);
-int newminhh_repack_stat_to_stat64(const struct stat *src, newminhh_stat64_t *dst);
-int newminhh_repack_stat_to_stat64_t64(const struct stat *src, newminhh_stat64_t64_t *dst);
-int newminhh_repack_stat_to_kstat32(const struct stat *src, newminhh_kstat32_t *dst);
+int newminhh_repack_stat_to_stat32(NM_NOESCAPE const struct stat *src, newminhh_stat32_t *dst);
+int newminhh_repack_stat_to_stat64(NM_NOESCAPE const struct stat *src, newminhh_stat64_t *dst);
+int newminhh_repack_stat_to_stat64_t64(NM_NOESCAPE const struct stat *src, newminhh_stat64_t64_t *dst);
+int newminhh_repack_stat_to_kstat32(NM_NOESCAPE const struct stat *src, newminhh_kstat32_t *dst);
 
-int newminhh_repack_timespec_to_32(const struct timespec *src, newminhh_timespec32_t *dst);
-int newminhh_repack_timespec_from_32(const newminhh_timespec32_t *src, struct timespec *dst);
-int newminhh_repack_timespec_to_64t32(const struct timespec *src, newminhh_timespec64_t32_t *dst);
-int newminhh_repack_timespec_from_64t32(const newminhh_timespec64_t32_t *src, struct timespec *dst);
+int newminhh_repack_timespec_to_32(NM_NOESCAPE const struct timespec *src, newminhh_timespec32_t *dst);
+int newminhh_repack_timespec_from_32(NM_NOESCAPE const newminhh_timespec32_t *src, struct timespec *dst);
+int newminhh_repack_timespec_to_64t32(NM_NOESCAPE const struct timespec *src, newminhh_timespec64_t32_t *dst);
+int newminhh_repack_timespec_from_64t32(NM_NOESCAPE const newminhh_timespec64_t32_t *src, struct timespec *dst);
 
-int newminhh_repack_rlimit_to_32(const struct rlimit *src, newminhh_rlimit32_t *dst);
-int newminhh_repack_rlimit_from_32(const newminhh_rlimit32_t *src, struct rlimit *dst);
-int newminhh_repack_rlimit_to_64t32(const struct rlimit *src, newminhh_rlimit64_t32_t *dst);
-int newminhh_repack_rlimit_from_64t32(const newminhh_rlimit64_t32_t *src, struct rlimit *dst);
+int newminhh_repack_rlimit_to_32(NM_NOESCAPE const struct rlimit *src, newminhh_rlimit32_t *dst);
+int newminhh_repack_rlimit_from_32(NM_NOESCAPE const newminhh_rlimit32_t *src, struct rlimit *dst);
+int newminhh_repack_rlimit_to_64t32(NM_NOESCAPE const struct rlimit *src, newminhh_rlimit64_t32_t *dst);
+int newminhh_repack_rlimit_from_64t32(NM_NOESCAPE const newminhh_rlimit64_t32_t *src, struct rlimit *dst);
 
 /* --- Callback pool & lifecycle wrappers (compat_callbacks.c) --- */
 
-void *newminhh_alloc_cb_trampoline(uint32_t guest_fn_va,
-                                   const nm_fn_sig_t *sig,
-                                   int mode,
-                                   uint32_t flags);
-void *newminhh_alloc_out_trampoline(void *target_x32_fn, const nm_fn_sig_t *sig);
-void *newminhh_alloc_out_trampoline_ex(void *target_x32_fn, const nm_fn_sig_t *sig, uint32_t flags);
-void *newminhh_wrap_init_array_fn(uint32_t guest_fn_va, int mode);
-void *newminhh_wrap_fini_array_fn(uint32_t guest_fn_va, int mode);
-void *newminhh_wrap_so_export(uint32_t guest_fn_va, const nm_fn_sig_t *sig, int mode);
+void *NM_NULLABLE_PTR newminhh_alloc_cb_trampoline(uint32_t guest_fn_va,
+                                                   const nm_fn_sig_t *NM_NULLABLE_PTR sig,
+                                                   int mode,
+                                                   uint32_t flags);
+void *NM_NULLABLE_PTR newminhh_alloc_out_trampoline(void *target_x32_fn, const nm_fn_sig_t *sig);
+void *NM_NULLABLE_PTR newminhh_alloc_out_trampoline_ex(void *target_x32_fn, const nm_fn_sig_t *sig, uint32_t flags);
+void *NM_NULLABLE_PTR newminhh_wrap_init_array_fn(uint32_t guest_fn_va, int mode);
+void *NM_NULLABLE_PTR newminhh_wrap_fini_array_fn(uint32_t guest_fn_va, int mode);
+void *NM_NULLABLE_PTR newminhh_wrap_so_export(uint32_t guest_fn_va, const nm_fn_sig_t *sig, int mode);
 
 void compat_qsort(void *base, uint32_t nmemb, uint32_t size, uint32_t guest_compar_va);
-void *compat_bsearch(const void *key, const void *base, uint32_t nmemb,
-                     uint32_t size, uint32_t guest_compar_va);
-int compat_pthread_create(uint32_t *thread_out, const void *attr,
+void *NM_NULLABLE_PTR compat_bsearch(const void *key, const void *base, uint32_t nmemb,
+                                     uint32_t size, uint32_t guest_compar_va);
+int compat_pthread_create(uint32_t *thread_out, const void *NM_NULLABLE_PTR attr,
                           uint32_t start_routine_va, uint32_t arg);
-int compat_pthread_join(uint32_t thread, void **retval);
+int compat_pthread_join(uint32_t thread, void *NM_NULLABLE_PTR *NM_NULLABLE_PTR retval);
 int compat_pthread_detach(uint32_t thread);
 uint32_t compat_pthread_self(void);
-void compat_pthread_exit(void *retval);
-int compat_pthread_mutex_init(void *guest_mutex, const void *attr);
+[[noreturn]] void compat_pthread_exit(void *NM_NULLABLE_PTR retval);
+int compat_pthread_mutex_init(void *guest_mutex, const void *NM_NULLABLE_PTR attr);
 int compat_pthread_mutex_destroy(void *guest_mutex);
 int compat_pthread_mutex_lock(void *guest_mutex);
 int compat_pthread_mutex_trylock(void *guest_mutex);
@@ -388,7 +392,7 @@ int compat___cxa_atexit(uint32_t fn_va, uint32_t arg, uint32_t dso_handle);
 void compat___cxa_finalize(uint32_t dso_handle);
 void newminhh_run_guest_atexits(void);
 uint32_t compat_signal(int signum, uint32_t handler_va);
-int compat_sigaction(int signum, const void *act, void *oldact);
+int compat_sigaction(int signum, const void *NM_NULLABLE_PTR act, void *NM_NULLABLE_PTR oldact);
 
 int compat_printf_cdecl(const uint32_t *cdecl_args);
 int compat_fprintf_cdecl(const uint32_t *cdecl_args);
@@ -401,14 +405,30 @@ int compat_vsnprintf(char *str, uint32_t size, const char *fmt, va_list ap);
 
 /* --- Dynamic linking & wrapper lookup (compat_dl.c / compat_wrappers.c) --- */
 
-void *compat_dlopen(const char *filename, int flags);
-void *compat_dlsym(void *handle, const char *symbol);
-void *compat_dlsym_cdecl(void *handle, const char *symbol);
-const char *compat_dlerror(void);
+void *NM_NULLABLE_PTR compat_dlopen(const char *filename, int flags);
+void *NM_NULLABLE_PTR compat_dlsym(void *handle, const char *symbol);
+void *NM_NULLABLE_PTR compat_dlsym_cdecl(void *handle, const char *symbol);
+const char *NM_NULLABLE_PTR compat_dlerror(void);
 int compat_dlclose(void *handle);
 
 int newminhh_compat_lookup_wrapper(const char *name, nm_sym_entry_t *out);
-void newminhh_get_stdio_streams(FILE **out_stdin, FILE **out_stdout, FILE **out_stderr);
+void newminhh_get_stdio_streams(FILE *NM_NULLABLE_PTR *NM_NULLABLE_PTR out_stdin,
+                                FILE *NM_NULLABLE_PTR *NM_NULLABLE_PTR out_stdout,
+                                FILE *NM_NULLABLE_PTR *NM_NULLABLE_PTR out_stderr);
+
+/* --- C11 / C23 Guest Libc Wrappers (compat_wrappers.c) --- */
+
+void *NM_NULLABLE_PTR compat_aligned_alloc(uint32_t alignment, uint32_t size);
+int compat_timespec_get(newminhh_timespec32_t *NM_NULLABLE_PTR ts32, int base);
+[[noreturn]] void compat_quick_exit(int status);
+char *NM_NULLABLE_PTR compat_strndup(const char *NM_NONNULL_PTR s, uint32_t n);
+void *NM_NULLABLE_PTR compat_memchr(const void *NM_NONNULL_PTR s, int c, uint32_t n);
+void *NM_NULLABLE_PTR compat_memccpy(void *NM_NONNULL_PTR dst, const void *NM_NONNULL_PTR src, int c, uint32_t n);
+void *NM_NULLABLE_PTR compat_memset_explicit(void *NM_NONNULL_PTR s, int c, uint32_t n);
+void compat_free_sized(void *NM_NULLABLE_PTR p, uint32_t sz);
+void compat_free_aligned_sized(void *NM_NULLABLE_PTR p, uint32_t align, uint32_t sz);
+
+NM_ASSUME_NONNULL_END
 
 #ifdef __cplusplus
 }
