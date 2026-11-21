@@ -24,16 +24,14 @@ constexpr size_t nm_countof_helper(T const (&)[N]) noexcept { return N; }
 #    define NM_COUNTOF(arr) nm_countof_helper(arr)
 #  else
 #    define NM_COUNTOF(arr) \
-        (sizeof(arr) / sizeof((arr)[0]) + 0 * sizeof(struct { \
-            static_assert(!__builtin_types_compatible_p(__typeof__(arr), __typeof__(&(arr)[0])), \
-                          "NM_COUNTOF used on a pointer instead of an array"); \
-            int __dummy; \
-        }))
+        (sizeof(arr) / sizeof((arr)[0]) + 0 * sizeof(int[1 - 2 * __builtin_types_compatible_p(__typeof__(arr), __typeof__(&(arr)[0]))]))
 #  endif
 #endif
 
-/* Clang nullability qualifiers */
+/* Clang nullability qualifiers & compiler extension pragmas */
 #if defined(__clang__)
+#  pragma clang diagnostic ignored "-Wnullability-extension"
+#  pragma clang diagnostic ignored "-Wgcc-compat"
 #  define NM_NONNULL_PTR _Nonnull
 #  define NM_NULLABLE_PTR _Nullable
 #  define NM_ASSUME_NONNULL_BEGIN _Pragma("clang assume_nonnull begin")

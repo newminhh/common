@@ -428,6 +428,16 @@ void *NM_NULLABLE_PTR compat_memset_explicit(void *NM_NONNULL_PTR s, int c, uint
 void compat_free_sized(void *NM_NULLABLE_PTR p, uint32_t sz);
 void compat_free_aligned_sized(void *NM_NULLABLE_PTR p, uint32_t align, uint32_t sz);
 
+/* --- Numeric conversion wrappers (compat_wrappers.c) --- */
+int32_t compat_strtol(const char *NM_NONNULL_PTR nptr, char *NM_NULLABLE_PTR *NM_NULLABLE_PTR endptr, int base);
+uint32_t compat_strtoul(const char *NM_NONNULL_PTR nptr, char *NM_NULLABLE_PTR *NM_NULLABLE_PTR endptr, int base);
+int64_t compat_strtoll(const char *NM_NONNULL_PTR nptr, char *NM_NULLABLE_PTR *NM_NULLABLE_PTR endptr, int base);
+uint64_t compat_strtoull(const char *NM_NONNULL_PTR nptr, char *NM_NULLABLE_PTR *NM_NULLABLE_PTR endptr, int base);
+int32_t compat___isoc23_strtol(const char *NM_NONNULL_PTR nptr, char *NM_NULLABLE_PTR *NM_NULLABLE_PTR endptr, int base);
+uint32_t compat___isoc23_strtoul(const char *NM_NONNULL_PTR nptr, char *NM_NULLABLE_PTR *NM_NULLABLE_PTR endptr, int base);
+int64_t compat___isoc23_strtoll(const char *NM_NONNULL_PTR nptr, char *NM_NULLABLE_PTR *NM_NULLABLE_PTR endptr, int base);
+uint64_t compat___isoc23_strtoull(const char *NM_NONNULL_PTR nptr, char *NM_NULLABLE_PTR *NM_NULLABLE_PTR endptr, int base);
+
 NM_ASSUME_NONNULL_END
 
 #ifdef __cplusplus
