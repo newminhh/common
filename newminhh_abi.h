@@ -58,8 +58,42 @@
 #define NM_SYM_FLAG_DATA        (1u << 0)
 #define NM_SYM_FLAG_VARIADIC    (1u << 1)
 #define NM_SYM_FLAG_CDECL_DIRECT (1u << 2)
+#define NM_SYM_FLAG_IFUNC        (1u << 3)
+#define NM_SYM_FLAG_NATIVE       (1u << 4) /* wrapper_fn is a native x32 symbol */
+#define NM_SYM_FLAG_PATCHED      (1u << 5) /* cdecl entry of a patched DSO */
+#define NM_SYM_FLAG_STATIC_ONLY  (1u << 6)
+#define NM_SYM_FLAG_RUNTIME_ONLY (1u << 7)
+#define NM_SYM_FLAG_WEAK         (1u << 8)
+#define NM_SYM_FLAG_PURE         (1u << 9)
 
 #define NM_RTLD_CDECL           0x10000
+
+/* nm_fn_sig_t ABI extension: abi_ext is 0 for legacy behaviour.
+ * NM_SIG_EXT_SRET: hidden sret pointer passed by the caller.
+ * NM_SIG_EXT_CALLEE_POP4: callee pops 4 bytes after returning (i386 SysV).
+ * NM_SIG_EXT_SRET_SIZE: number of extra i386 stack slots the callee pops, bits 3..7. */
+#define NM_SIG_EXT_SRET         (1u << 0)
+#define NM_SIG_EXT_CALLEE_POP4  (1u << 1)
+#ifdef __ASSEMBLER__
+#  define NM_SIG_EXT_SRET_SIZE(e)  ((e) >> 3)
+#  define NM_SIG_EXT_MAKE_SRET(n)  (NM_SIG_EXT_SRET | NM_SIG_EXT_CALLEE_POP4 | ((n) << 3))
+#else
+#  define NM_SIG_EXT_SRET_SIZE(e)  ((uint8_t)((e) >> 3))
+#  define NM_SIG_EXT_MAKE_SRET(n)  ((uint8_t)(NM_SIG_EXT_SRET | NM_SIG_EXT_CALLEE_POP4 | ((n) << 3)))
+#endif
+
+/* .note.newminhh v2 constants (loader/patcher; GAS-safe without C casts) */
+#define NM_NOTE_NAME                  "newminhh"
+#define NM_NOTE_TYPE_PATCHED          0x4E4D4848u
+#define NM_NOTE_V2_VERSION            2u
+#define NM_NOTE_V2_FLAG_CDECL_ALIASES (1u << 0)
+#define NM_NOTE_V2_FLAG_LEVEL_SHIFT   4
+#define NM_NOTE_V2_FLAG_LEVEL_MASK    (0xFu << NM_NOTE_V2_FLAG_LEVEL_SHIFT)
+#ifdef __ASSEMBLER__
+#  define NM_NOTE_V2_FLAG_LEVEL(n)    ((n) << NM_NOTE_V2_FLAG_LEVEL_SHIFT)
+#else
+#  define NM_NOTE_V2_FLAG_LEVEL(n)    (((uint32_t)(n) & 0xFu) << NM_NOTE_V2_FLAG_LEVEL_SHIFT)
+#endif
 
 #ifndef __ASSEMBLER__
 
@@ -271,15 +305,28 @@ typedef struct {
 
 static_assert(sizeof(newminhh_mmap_arg_struct32_t) == 24, "newminhh_mmap_arg_struct32_t must be 24 bytes");
 
+/* i386 Linux struct sigaction userspace layout (kernel arch/x86 i386 ABI).
+ * compat_callbacks.c repacks between host glibc/musl sigactions and this form. */
+typedef struct {
+    uint32_t sa_handler_va;
+    uint32_t sa_flags;
+    uint32_t sa_restorer_va;
+    uint32_t sa_mask[2];
+} newminhh_sigaction32_t;
+
+static_assert(sizeof(newminhh_sigaction32_t) == 20, "newminhh_sigaction32_t must be 20 bytes");
+
 /* --- Signature descriptors & symbol registry --- */
 
 typedef struct {
     uint8_t ret_kind;
     uint8_t nargs;
     uint8_t is_variadic;
-    uint8_t _reserved;
+    uint8_t abi_ext;                /* NM_SIG_EXT_*; 0 = legacy behaviour */
     uint8_t arg_kinds[NM_MAX_SIG_ARGS];
 } nm_fn_sig_t;
+
+static_assert(sizeof(nm_fn_sig_t) == 20, "nm_fn_sig_t layout is embedded in patched binaries");
 
 typedef struct {
     const char *NM_NONNULL_PTR name;
@@ -361,6 +408,13 @@ int newminhh_repack_rlimit_from_32(NM_NOESCAPE const newminhh_rlimit32_t *src, s
 int newminhh_repack_rlimit_to_64t32(NM_NOESCAPE const struct rlimit *src, newminhh_rlimit64_t32_t *dst);
 int newminhh_repack_rlimit_from_64t32(NM_NOESCAPE const newminhh_rlimit64_t32_t *src, struct rlimit *dst);
 
+/* Fix up ET_EXEC R_386_COPY slots for environ/optarg/optind/opterr/optopt after ctor init. */
+void newminhh_compat_fixup_copy_data(void *NM_NULLABLE_PTR environ_slot,
+                                     void *NM_NULLABLE_PTR optarg_slot,
+                                     void *NM_NULLABLE_PTR optind_slot,
+                                     void *NM_NULLABLE_PTR opterr_slot,
+                                     void *NM_NULLABLE_PTR optopt_slot);
+
 /* --- Callback pool & lifecycle wrappers (compat_callbacks.c) --- */
 
 void *NM_NULLABLE_PTR newminhh_alloc_cb_trampoline(uint32_t guest_fn_va,
@@ -412,6 +466,14 @@ const char *NM_NULLABLE_PTR compat_dlerror(void);
 int compat_dlclose(void *handle);
 
 int newminhh_compat_lookup_wrapper(const char *name, nm_sym_entry_t *out);
+int newminhh_lookup_resolve(const char *NM_NULLABLE_PTR soname,
+                            const char *NM_NONNULL_PTR sym,
+                            const char *NM_NULLABLE_PTR ver,
+                            nm_sym_entry_t *NM_NONNULL_PTR out,
+                            void *NM_NULLABLE_PTR *NM_NULLABLE_PTR native_handle);
+int newminhh_lookup_classify_lib(const char *NM_NONNULL_PTR soname,
+                                 char *NM_NULLABLE_PTR tgt_out,
+                                 size_t tgt_sz);
 void newminhh_get_stdio_streams(FILE *NM_NULLABLE_PTR *NM_NULLABLE_PTR out_stdin,
                                 FILE *NM_NULLABLE_PTR *NM_NULLABLE_PTR out_stdout,
                                 FILE *NM_NULLABLE_PTR *NM_NULLABLE_PTR out_stderr);

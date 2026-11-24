@@ -12,8 +12,9 @@ Consumed by [`newminhh/compat`](https://github.com/newminhh/compat) (`libnewminh
 
 | File | Description |
 | :--- | :--- |
-| `newminhh_cstd.h` | Razor-thin compiler divergence layer enforcing GNU C23 compile-time floor (`#error` if `< 202311L`), Clang nullability qualifiers (`NM_NONNULL_PTR`, `NM_NULLABLE_PTR`), escape diagnostics (`NM_NOESCAPE`), GCC attributes (`NM_REPRODUCIBLE`, `NM_UNSEQUENCED`), normalized cross-compiler attributes (`NM_COUNTED_BY`, `NM_PRINTF_FMT`), progressive `NM_COUNTOF`, and pedantic-clean pointer conversions |
-| `newminhh_abi.h` | Virtual CPU state (`newminhh_cpu_t`), exact byte offset macros for GAS assembly, exit reasons, i386/x32 ABI struct definitions with C23 `static_assert` and `alignof` checks, fixed-underlying-type enums, signature descriptors, integration callback interfaces, and public `compat` API declarations including 9 C11/C23 guest libc wrappers |
+| `newminhh_cstd.h` | Razor-thin compiler divergence layer enforcing GNU C23 compile-time floor (`#error` if `< 202311L`), Clang nullability qualifiers (`NM_NONNULL_PTR`, `NM_NULLABLE_PTR`), escape diagnostics (`NM_NOESCAPE`), GCC attributes (`NM_REPRODUCIBLE`, `NM_UNSEQUENCED`), normalized cross-compiler attributes (`NM_COUNTED_BY`, `NM_PRINTF_FMT`), progressive `NM_COUNTOF`, pedantic-clean pointer conversions, a `<stdbit.h>` wrapper (`NM_HAS_SINGLE_BIT`, `NM_BIT_CEIL`; `__NM_FORCE_NO_STDBIT` forces the portable fallback), `nm_memset_explicit`, and `nm_gettid` (hosted Linux builds) |
+| `newminhh_abi.h` | Virtual CPU state (`newminhh_cpu_t`), exact byte offset macros for GAS assembly, exit reasons, i386/x32 ABI struct definitions with C23 `static_assert` and `alignof` checks, fixed-underlying-type enums, signature descriptors (`nm_fn_sig_t` + `nm_fn_sig_t.abi_ext`/`NM_SIG_EXT_*`), symbol flags (incl. `NM_SYM_FLAG_IFUNC/NATIVE/PATCHED/STATIC_ONLY/RUNTIME_ONLY`), `.note.newminhh` v2 constants, `newminhh_sigaction32_t`, integration callback interfaces, and public `compat` API declarations including `newminhh_compat_fixup_copy_data`, `newminhh_lookup_resolve`, and 9 C11/C23 guest libc wrappers |
+| `newminhh_lookup.h` | **New.** Lookup table/rules engine API: `nm_lookup_t`, `nm_lk_entry_t`, `nm_lk_class_t`, `NM_LOOKUP_DEFAULT_CACHE/RULES`, `nm_lookup_open`/`nm_lookup_open_mem`, `nm_lookup_find`, `nm_lookup_find_lib`, `nm_lookup_interp`, `nm_lookup_libc`, `nm_lookup_is_stale`, `nm_lookup_close`, plus signature helpers `nm_sig_parse`/`nm_sig_format` |
 | `newminhh_log.h` | Structured `stderr` logging macros (`NM_LOG_ERROR`, `NM_LOG_WARN`, `NM_LOG_INFO` gated on `NEWMINHH_DEBUG`) utilizing C23 `__VA_OPT__(,)` and `[[nodiscard]]` |
 
 ---
@@ -75,6 +76,19 @@ Exported by `libnewminhh_compat.so` and declared in `newminhh_abi.h`:
 - `NM_LOG_ERROR(mod, fmt, ...)` — Always prints `[newminhh:<mod>] ERROR: ...` to `stderr`
 - `NM_LOG_WARN(mod, fmt, ...)` — Always prints `[newminhh:<mod>] WARN: ...` to `stderr`
 - `NM_LOG_INFO(mod, fmt, ...)` — Emits `[newminhh:<mod>] INFO: ...` to `stderr` only when `NEWMINHH_DEBUG` is set and non-zero; uses C23 `__VA_OPT__(,)` to eliminate empty variadic warnings cleanly.
+
+---
+
+### 6. Signature ABI Extensions & i386 `sigaction` Layout (`newminhh_abi.h`)
+
+- `nm_fn_sig_t.abi_ext` (replaces the legacy `_reserved` field at the same offset): `static_assert(sizeof(nm_fn_sig_t) == 20, ...)` pins the layout embedded in patched binaries. `0` = legacy behaviour.
+- SRet extension: `NM_SIG_EXT_SRET` (`1u << 0`), `NM_SIG_EXT_CALLEE_POP4` (`1u << 1`), `NM_SIG_EXT_SRET_SIZE(e)`, `NM_SIG_EXT_MAKE_SRET(n)` — the last two are GAS-safe (`__ASSEMBLER__` variants drop C casts).
+- `.note.newminhh` v2: `NM_NOTE_NAME`, `NM_NOTE_TYPE_PATCHED` (0x4E4D4848), `NM_NOTE_V2_VERSION` (2), `NM_NOTE_V2_FLAG_CDECL_ALIASES`, `NM_NOTE_V2_FLAG_LEVEL_SHIFT`/`_MASK`/`(n)`.
+- `newminhh_sigaction32_t` — i386 Linux `struct sigaction` userspace layout for guest-side repacking in `compat_callbacks.c` (`sa_handler_va`, `sa_flags`, `sa_restorer_va`, `sa_mask[2]`), `static_assert(sizeof(...) == 20, ...)`.
+
+### 7. Lookup Engine API (`newminhh_lookup.h`)
+
+Opaque `nm_lookup_t` plus `nm_lk_entry_t`/`nm_lk_class_t`; entry points: `nm_lookup_open`, `nm_lookup_open_mem` (testing/embedded), `nm_lookup_find`, `nm_lookup_find_lib`, `nm_lookup_interp`, `nm_lookup_libc`, `nm_lookup_is_stale`, `nm_lookup_close`; signature helpers `nm_sig_parse` / `nm_sig_format`.
 
 ---
 

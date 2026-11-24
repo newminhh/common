@@ -99,6 +99,37 @@ constexpr size_t nm_countof_helper(T const (&)[N]) noexcept { return N; }
 #define NM_LIKELY(x)                  __builtin_expect(!!(x), 1)
 #define NM_UNLIKELY(x)                __builtin_expect(!!(x), 0)
 
+/* Portable <stdbit.h> wrapper (C23); __NM_FORCE_NO_STDBIT forces the fallback */
+#if !defined(__NM_FORCE_NO_STDBIT) && !defined(__cplusplus) && defined(__has_include) && __has_include(<stdbit.h>)
+#  include <stdbit.h>
+#  define NM_HAS_SINGLE_BIT(x) stdc_has_single_bit(x)
+#  define NM_BIT_CEIL(x)       stdc_bit_ceil(x)
+#else
+#  define NM_HAS_SINGLE_BIT(x) ((x) != 0 && (((x) & ((x) - 1)) == 0))
+#  define NM_BIT_CEIL(x)         ((x) <= 1 ? (__typeof__(x))1                   : (__typeof__(x))((__typeof__(x))2 <<                      ((sizeof(x) * 8u) - 1u - (unsigned)__builtin_clzg((__typeof__(x))((x) - 1)))))
+#endif
+
+/* memset_explicit: portable C23 secure zeroing across glibc and musl */
+static inline void *NM_NONNULL_PTR nm_memset_explicit(void *NM_NONNULL_PTR p, int c, size_t n)
+{
+    volatile unsigned char *pv = (volatile unsigned char *)p;
+    for (size_t i = 0; i < n; ++i) {
+        pv[i] = (unsigned char)c;
+    }
+    __asm__ volatile("" : : "r"(p) : "memory");
+    return p;
+}
+
+/* Current thread id via the Linux gettid syscall (hosted Linux builds only) */
+#if defined(__linux__) && defined(__STDC_HOSTED__) && (__STDC_HOSTED__ != 0)
+#  include <sys/syscall.h>
+#  include <unistd.h>
+static inline int nm_gettid(void)
+{
+    return (int)syscall(SYS_gettid);
+}
+#endif
+
 #endif /* !__ASSEMBLER__ */
 
 #endif /* NEWMINHH_CSTD_H */
